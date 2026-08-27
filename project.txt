@@ -1,0 +1,20 @@
+Directrices del Proyecto Final
+Curso de Desarrollo con Inteligencia Artificial
+Objetivo del Proyecto
+El proyecto final consiste en la conceptualización, construcción y despliegue de pagina web interactiva. Los estudiantes tendrán un límite de tiempo de 2 semanas para completar el ciclo completo y publicar su aplicación en la nube mediante plataformas de despliegue directo.
+El enfoque de evaluación recae totalmente en la capacidad de orquestación técnica utilizando herramientas de IA generativa (OpenCode, Agentes, GitHub Copilot) implementadas durante los módulos del curso, y no en la codificación manual de la sintaxis.
+Normativas Estrictas del proyecto
+Se auditará el cumplimiento ineludible de las siguientes reglas:
+* 1. Cero Código Manual (Regla Fundamental): Queda estrictamente prohibida la escritura manual de la lógica de programación. Toda la estructura, funciones e integraciones deben ser generadas mediante estrategias de prompting, delegadas a los Modos Plan/Build y herramientas de autocompletado (BYOK).
+* 2. Integración de Contexto de Datos (MCP): El sistema debe ser dinámico. El estudiante creará un archivo base (JSON o CSV) o trabajará con SQLite, dónde se contenga la información a mostrar, el cual debe ser inyectado como contexto para que el Agente desarrolle la interfaz en función de esos datos estructurales.
+* 3. Uso de Skills / Comandos Personalizados: Es requisito indispensable instalar o crear y hacer uso de al menos una skill y configurar al menos un comando personalizado en el entorno (ej.
+/renderizar_tarjetas) que orqueste instrucciones complejas para la creación del frontend.
+* 4. Uso de Agentes Personalizados: Es obligatorio integrar al menos un agente especializado diseñado para gestionar una parte específica del proyecto, demostrando capacidad de orquestación y flujo de trabajo entre agentes.
+* 5. Refactorización y Depuración Autónoma: Ante problemas de compatibilidad visual, errores en consola o fallos con variables nulas, la resolución manual está prohibida. El estudiante debe apoyarse en el Agente de terminal o chat para rastrear el fallo, solicitar el porqué del error y aplicar la corrección automática.
+* 6. Despliegue a Producción: El reto culmina exitosamente cuando la web está publicada, siendo accesible de forma pública mediante un enlace funcional.
+
+
+Tematica sugerida:
+
+Sitio web para llevar registro de peliculas y series, conectado con TMDb API, usando database sqlite y usando svelte para hacerlo
+
