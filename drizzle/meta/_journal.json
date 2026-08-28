@@ -15,6 +15,20 @@
       "when": 1787877429748,
       "tag": "0001_fine_hawkeye",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1787931832326,
+      "tag": "0002_skinny_darwin",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1787936702952,
+      "tag": "0003_boring_the_executioner",
+      "breakpoints": true
     }
   ]
 }

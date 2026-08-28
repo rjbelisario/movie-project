@@ -1,4 +1,5 @@
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
+import { error } from '@sveltejs/kit';
 import { db } from './db';
 import {
 	libraryItems,
@@ -11,6 +12,9 @@ import {
 /**
  * Capa de acceso a la tabla `library_items` mediante Drizzle ORM.
  * Toda la lógica de CRUD y estadísticas de la biblioteca del usuario vive aquí.
+ * Cada función recibe `userId` y lo aplica en el WHERE de la propia query (no como
+ * chequeo posterior a un fetch por id) para que un usuario nunca pueda leer ni mutar
+ * datos de otro adivinando un id.
  */
 
 export interface LibraryFilters {
@@ -18,17 +22,14 @@ export interface LibraryFilters {
 	mediaType?: LibraryItem['mediaType'];
 }
 
-/** Lista items de la biblioteca, opcionalmente filtrados por status y/o mediaType. */
-export async function listLibraryItems(filters: LibraryFilters = {}): Promise<LibraryItem[]> {
-	const conditions = [];
+/** Lista items de la biblioteca de `userId`, opcionalmente filtrados por status y/o mediaType. */
+export async function listLibraryItems(
+	userId: string,
+	filters: LibraryFilters = {}
+): Promise<LibraryItem[]> {
+	const conditions = [eq(libraryItems.userId, userId)];
 	if (filters.status) conditions.push(eq(libraryItems.status, filters.status));
 	if (filters.mediaType) conditions.push(eq(libraryItems.mediaType, filters.mediaType));
-
-	const query = db.select().from(libraryItems).orderBy(desc(libraryItems.updatedAt));
-
-	if (conditions.length === 0) {
-		return query;
-	}
 
 	return db
 		.select()
@@ -37,57 +38,75 @@ export async function listLibraryItems(filters: LibraryFilters = {}): Promise<Li
 		.orderBy(desc(libraryItems.updatedAt));
 }
 
-/** Obtiene un item de la biblioteca por su id interno, o `undefined` si no existe. */
-export async function getLibraryItem(id: number): Promise<LibraryItem | undefined> {
-	const [item] = await db.select().from(libraryItems).where(eq(libraryItems.id, id));
+/** Obtiene un item de la biblioteca de `userId` por su id interno, o `undefined` si no existe. */
+export async function getLibraryItem(userId: string, id: number): Promise<LibraryItem | undefined> {
+	const [item] = await db
+		.select()
+		.from(libraryItems)
+		.where(and(eq(libraryItems.id, id), eq(libraryItems.userId, userId)));
 	return item;
 }
 
-/** Busca un item de la biblioteca por su (tmdbId, mediaType), o `undefined` si no está guardado. */
+/** Busca un item de la biblioteca de `userId` por su (tmdbId, mediaType), o `undefined`. */
 export async function findLibraryItemByTmdb(
+	userId: string,
 	tmdbId: number,
 	mediaType: LibraryItem['mediaType']
 ): Promise<LibraryItem | undefined> {
 	const [item] = await db
 		.select()
 		.from(libraryItems)
-		.where(and(eq(libraryItems.tmdbId, tmdbId), eq(libraryItems.mediaType, mediaType)));
+		.where(
+			and(
+				eq(libraryItems.userId, userId),
+				eq(libraryItems.tmdbId, tmdbId),
+				eq(libraryItems.mediaType, mediaType)
+			)
+		);
 	return item;
 }
 
-/** Agrega un nuevo item a la biblioteca. */
-export async function addToLibrary(item: NewLibraryItem): Promise<LibraryItem> {
-	const [inserted] = await db.insert(libraryItems).values(item).returning();
+/** Agrega un nuevo item a la biblioteca de `userId`. */
+export async function addToLibrary(
+	userId: string,
+	item: Omit<NewLibraryItem, 'userId'>
+): Promise<LibraryItem> {
+	const [inserted] = await db
+		.insert(libraryItems)
+		.values({ ...item, userId })
+		.returning();
 	return inserted;
 }
 
-/** Campos editables de un item existente (no se puede cambiar id, createdAt ni updatedAt a mano). */
-export type LibraryItemPatch = Partial<Omit<NewLibraryItem, 'id' | 'createdAt' | 'updatedAt'>>;
+/** Campos editables de un item existente (no se puede cambiar id, userId, createdAt ni updatedAt a mano). */
+export type LibraryItemPatch = Partial<Omit<NewLibraryItem, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>;
 
-/** Actualiza un item existente y refresca `updatedAt`. Devuelve `undefined` si no existe. */
+/** Actualiza un item existente de `userId` y refresca `updatedAt`. Devuelve `undefined` si no existe o no es suyo. */
 export async function updateLibraryItem(
+	userId: string,
 	id: number,
 	patch: LibraryItemPatch
 ): Promise<LibraryItem | undefined> {
 	const [updated] = await db
 		.update(libraryItems)
 		.set({ ...patch, updatedAt: new Date().toISOString() })
-		.where(eq(libraryItems.id, id))
+		.where(and(eq(libraryItems.id, id), eq(libraryItems.userId, userId)))
 		.returning();
 	return updated;
 }
 
-/** Elimina un item de la biblioteca. Devuelve `true` si existía y fue eliminado. */
-export async function removeFromLibrary(id: number): Promise<boolean> {
+/** Elimina un item de la biblioteca de `userId`. Devuelve `true` si existía y era suyo. */
+export async function removeFromLibrary(userId: string, id: number): Promise<boolean> {
 	const deleted = await db
 		.delete(libraryItems)
-		.where(eq(libraryItems.id, id))
+		.where(and(eq(libraryItems.id, id), eq(libraryItems.userId, userId)))
 		.returning({ id: libraryItems.id });
 	return deleted.length > 0;
 }
 
-/** Episodios vistos de una serie de la biblioteca, como pares (temporada, episodio). */
+/** Episodios vistos de una serie de la biblioteca de `userId`, como pares (temporada, episodio). */
 export async function getWatchedEpisodes(
+	userId: string,
 	libraryItemId: number
 ): Promise<Pick<EpisodeProgress, 'seasonNumber' | 'episodeNumber'>[]> {
 	return db
@@ -96,42 +115,60 @@ export async function getWatchedEpisodes(
 			episodeNumber: episodeProgress.episodeNumber
 		})
 		.from(episodeProgress)
-		.where(eq(episodeProgress.libraryItemId, libraryItemId));
+		.innerJoin(libraryItems, eq(episodeProgress.libraryItemId, libraryItems.id))
+		.where(and(eq(episodeProgress.libraryItemId, libraryItemId), eq(libraryItems.userId, userId)));
 }
 
-/** Número total de episodios vistos de una serie de la biblioteca. */
-export async function countWatchedEpisodes(libraryItemId: number): Promise<number> {
-	const rows = await getWatchedEpisodes(libraryItemId);
+/** Número total de episodios vistos de una serie de la biblioteca de `userId`. */
+export async function countWatchedEpisodes(userId: string, libraryItemId: number): Promise<number> {
+	const rows = await getWatchedEpisodes(userId, libraryItemId);
 	return rows.length;
 }
 
-/** Marca un episodio como visto. Idempotente: si ya estaba marcado, no hace nada. */
+/**
+ * Marca un episodio como visto. Idempotente: si ya estaba marcado, no hace nada.
+ * Verifica propiedad del library_item dentro de una transacción antes de insertar,
+ * para no crear progreso de episodios sobre un item que no es de `userId`.
+ */
 export async function markEpisodeWatched(
+	userId: string,
 	libraryItemId: number,
 	seasonNumber: number,
 	episodeNumber: number
 ): Promise<void> {
-	await db
-		.insert(episodeProgress)
-		.values({ libraryItemId, seasonNumber, episodeNumber })
-		.onConflictDoNothing();
+	await db.transaction(async (tx) => {
+		const [owned] = await tx
+			.select({ id: libraryItems.id })
+			.from(libraryItems)
+			.where(and(eq(libraryItems.id, libraryItemId), eq(libraryItems.userId, userId)));
+
+		if (!owned) error(404, 'Item no encontrado en la biblioteca.');
+
+		await tx
+			.insert(episodeProgress)
+			.values({ libraryItemId, seasonNumber, episodeNumber })
+			.onConflictDoNothing();
+	});
 }
 
-/** Quita la marca de visto de un episodio. Idempotente: si no estaba marcado, no hace nada. */
+/** Quita la marca de visto de un episodio de la biblioteca de `userId`. Idempotente. */
 export async function markEpisodeUnwatched(
+	userId: string,
 	libraryItemId: number,
 	seasonNumber: number,
 	episodeNumber: number
 ): Promise<void> {
-	await db
-		.delete(episodeProgress)
-		.where(
-			and(
-				eq(episodeProgress.libraryItemId, libraryItemId),
-				eq(episodeProgress.seasonNumber, seasonNumber),
-				eq(episodeProgress.episodeNumber, episodeNumber)
+	await db.delete(episodeProgress).where(
+		and(
+			eq(episodeProgress.libraryItemId, libraryItemId),
+			eq(episodeProgress.seasonNumber, seasonNumber),
+			eq(episodeProgress.episodeNumber, episodeNumber),
+			inArray(
+				episodeProgress.libraryItemId,
+				db.select({ id: libraryItems.id }).from(libraryItems).where(eq(libraryItems.userId, userId))
 			)
-		);
+		)
+	);
 }
 
 export interface LibraryGenreCount {
@@ -148,12 +185,12 @@ export interface LibraryStats {
 }
 
 /**
- * Calcula estadísticas agregadas de toda la biblioteca: total, distribución por status,
+ * Calcula estadísticas agregadas de la biblioteca de `userId`: total, distribución por status,
  * distribución por mediaType, top géneros y promedio de rating (solo sobre items con rating
  * no nulo).
  */
-export async function getLibraryStats(): Promise<LibraryStats> {
-	const items = await db.select().from(libraryItems);
+export async function getLibraryStats(userId: string): Promise<LibraryStats> {
+	const items = await db.select().from(libraryItems).where(eq(libraryItems.userId, userId));
 
 	const byStatus: Record<LibraryItem['status'], number> = {
 		planned: 0,

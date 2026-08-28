@@ -2,6 +2,7 @@ import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { getMediaDetails, getCredits, getTrailerKey, getSimilar, getGenres } from '$lib/server/tmdb';
 import { findLibraryItemByTmdb, getWatchedEpisodes } from '$lib/server/library';
+import { requireUser } from '$lib/server/auth';
 import type { TmdbMediaType, TmdbCredits, TmdbSearchResultItem, TmdbGenre } from '$lib/server/tmdb';
 
 function parseMediaType(param: string): TmdbMediaType {
@@ -11,7 +12,8 @@ function parseMediaType(param: string): TmdbMediaType {
 	return param;
 }
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ params, locals }) => {
+	const user = requireUser(locals);
 	const mediaType = parseMediaType(params.mediaType);
 	const tmdbId = Number(params.id);
 	if (!Number.isInteger(tmdbId)) {
@@ -26,7 +28,7 @@ export const load: PageServerLoad = async ({ params }) => {
 	}
 
 	const [libraryItem, credits, trailerKey, similar, genreList] = await Promise.all([
-		findLibraryItemByTmdb(tmdbId, mediaType),
+		findLibraryItemByTmdb(user.id, tmdbId, mediaType),
 		getCredits(mediaType, tmdbId).catch((): TmdbCredits => ({ cast: [], directors: [] })),
 		getTrailerKey(mediaType, tmdbId).catch((): null => null),
 		getSimilar(mediaType, tmdbId).catch((): TmdbSearchResultItem[] => []),
@@ -37,7 +39,7 @@ export const load: PageServerLoad = async ({ params }) => {
 	const genres = details.genres.map((name) => ({ name, id: genreNameToId.get(name) ?? null }));
 
 	const watchedEpisodes =
-		mediaType === 'tv' && libraryItem ? await getWatchedEpisodes(libraryItem.id) : [];
+		mediaType === 'tv' && libraryItem ? await getWatchedEpisodes(user.id, libraryItem.id) : [];
 
 	return { details, genres, libraryItem, watchedEpisodes, credits, trailerKey, similar };
 };

@@ -1,5 +1,6 @@
 import type { PageServerLoad } from './$types';
 import { getLibraryStats, listLibraryItems } from '$lib/server/library';
+import { requireUser } from '$lib/server/auth';
 import {
 	getTrending,
 	getPopularMovies,
@@ -21,10 +22,11 @@ async function safeTmdbList(fetcher: () => Promise<TmdbSearchResultItem[]>) {
 	}
 }
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ locals }) => {
+	const user = requireUser(locals);
 	const [stats, recent, trending, popularMovies, popularTv, upcomingMovies] = await Promise.all([
-		getLibraryStats(),
-		listLibraryItems().then((items) => items.slice(0, 10)),
+		getLibraryStats(user.id),
+		listLibraryItems(user.id).then((items) => items.slice(0, 10)),
 		safeTmdbList(() => getTrending('week')),
 		safeTmdbList(getPopularMovies),
 		safeTmdbList(getPopularTv),

@@ -1,6 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { getLibraryItem, markEpisodeWatched, markEpisodeUnwatched } from '$lib/server/library';
+import { markEpisodeWatched, markEpisodeUnwatched } from '$lib/server/library';
+import { requireUser } from '$lib/server/auth';
 
 function parseParams(params: { id: string; season: string; episode: string }) {
 	const libraryItemId = Number(params.id);
@@ -17,25 +18,19 @@ function parseParams(params: { id: string; season: string; episode: string }) {
 }
 
 /** Marca un episodio como visto. */
-export const PUT: RequestHandler = async ({ params }) => {
+export const PUT: RequestHandler = async ({ params, locals }) => {
+	const user = requireUser(locals);
 	const { libraryItemId, seasonNumber, episodeNumber } = parseParams(params);
 
-	if (!(await getLibraryItem(libraryItemId))) {
-		error(404, 'Item no encontrado en la biblioteca.');
-	}
-
-	await markEpisodeWatched(libraryItemId, seasonNumber, episodeNumber);
+	await markEpisodeWatched(user.id, libraryItemId, seasonNumber, episodeNumber);
 	return json({ watched: true });
 };
 
 /** Quita la marca de visto de un episodio. */
-export const DELETE: RequestHandler = async ({ params }) => {
+export const DELETE: RequestHandler = async ({ params, locals }) => {
+	const user = requireUser(locals);
 	const { libraryItemId, seasonNumber, episodeNumber } = parseParams(params);
 
-	if (!(await getLibraryItem(libraryItemId))) {
-		error(404, 'Item no encontrado en la biblioteca.');
-	}
-
-	await markEpisodeUnwatched(libraryItemId, seasonNumber, episodeNumber);
+	await markEpisodeUnwatched(user.id, libraryItemId, seasonNumber, episodeNumber);
 	return json({ watched: false });
 };

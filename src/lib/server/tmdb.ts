@@ -27,6 +27,16 @@ export interface TmdbSearchResultItem {
 	overview: string;
 	posterPath: string | null;
 	releaseDate: string | null;
+	/** Ids de género de TMDb (gratis en cualquier endpoint de lista, sin llamada extra). */
+	genreIds: number[];
+	voteAverage: number;
+	voteCount: number;
+	popularity: number;
+	/** Código ISO 639-1 del idioma original. */
+	originalLanguage: string;
+	/** Países de origen (ISO 3166-1). Solo viene poblado en listas de TV — TMDb nunca lo incluye
+	 * en listas de películas (ahí solo está disponible en el detalle, vía `production_countries`). */
+	originCountry: string[];
 }
 
 export interface TmdbMediaDetails {
@@ -40,6 +50,11 @@ export interface TmdbMediaDetails {
 	releaseDate: string | null;
 	genres: string[];
 	voteAverage: number;
+	voteCount: number;
+	popularity: number;
+	originalLanguage: string;
+	/** Países de origen (ISO 3166-1). Movie: `production_countries`; TV: `origin_country`. */
+	originCountry: string[];
 	status: string;
 	/** Duración en minutos (solo películas). */
 	runtimeMinutes: number | null;
@@ -106,6 +121,13 @@ interface TmdbRawSearchResult {
 	poster_path?: string | null;
 	release_date?: string;
 	first_air_date?: string;
+	genre_ids?: number[];
+	vote_average?: number;
+	vote_count?: number;
+	popularity?: number;
+	original_language?: string;
+	/** Solo presente en listas de TV; TMDb nunca lo incluye en listas de películas. */
+	origin_country?: string[];
 }
 
 interface TmdbRawResultsResponse {
@@ -119,6 +141,11 @@ interface TmdbRawGenreListResponse {
 	genres: TmdbRawGenre[];
 }
 
+interface TmdbRawProductionCountry {
+	iso_3166_1: string;
+	name: string;
+}
+
 interface TmdbRawMovieDetails {
 	id: number;
 	title: string;
@@ -129,6 +156,10 @@ interface TmdbRawMovieDetails {
 	release_date: string | null;
 	genres: TmdbRawGenre[];
 	vote_average: number;
+	vote_count: number;
+	popularity: number;
+	original_language: string;
+	production_countries: TmdbRawProductionCountry[];
 	status: string;
 	runtime: number | null;
 }
@@ -151,6 +182,10 @@ interface TmdbRawTvDetails {
 	first_air_date: string | null;
 	genres: TmdbRawGenre[];
 	vote_average: number;
+	vote_count: number;
+	popularity: number;
+	original_language: string;
+	origin_country: string[];
 	status: string;
 	number_of_seasons: number | null;
 	number_of_episodes: number | null;
@@ -202,6 +237,20 @@ interface TmdbRawSeasonDetails {
 	season_number: number;
 	name: string;
 	episodes: TmdbRawEpisode[];
+}
+
+interface TmdbRawKeyword {
+	id: number;
+	name: string;
+}
+
+/** Shape distinto entre movie y tv — asimetría real y documentada de la API v3 de TMDb. */
+interface TmdbRawMovieKeywordsResponse {
+	keywords: TmdbRawKeyword[];
+}
+
+interface TmdbRawTvKeywordsResponse {
+	results: TmdbRawKeyword[];
 }
 
 /**
@@ -263,7 +312,13 @@ function mapSearchResult(
 		title: title ?? '',
 		overview: raw.overview ?? '',
 		posterPath: raw.poster_path ?? null,
-		releaseDate: releaseDate ?? null
+		releaseDate: releaseDate ?? null,
+		genreIds: raw.genre_ids ?? [],
+		voteAverage: raw.vote_average ?? 0,
+		voteCount: raw.vote_count ?? 0,
+		popularity: raw.popularity ?? 0,
+		originalLanguage: raw.original_language ?? '',
+		originCountry: raw.origin_country ?? []
 	};
 }
 
@@ -345,6 +400,10 @@ export interface DiscoverFilters {
 	sortBy?: TmdbSortBy;
 	/** Código ISO 639-1 del idioma original (ej. 'es', 'en', 'ja'). */
 	originalLanguage?: string;
+	/** Ids de keyword de TMDb, combinados con OR (`with_keywords` usa `|`, no coma — al revés
+	 * que `with_genres`). Las keywords son mucho más específicas que los géneros; pedir el AND
+	 * de varias casi siempre vacía el resultado. */
+	keywordIds?: number[];
 }
 
 /** Descubre títulos por filtros combinados (`/discover/{mediaType}`). */
@@ -373,6 +432,9 @@ export async function discoverTitles(
 	if (filters.originalLanguage) {
 		params.with_original_language = filters.originalLanguage;
 	}
+	if (filters.keywordIds && filters.keywordIds.length > 0) {
+		params.with_keywords = filters.keywordIds.join('|');
+	}
 
 	const data = await tmdbFetch<TmdbRawResultsResponse>(`/discover/${mediaType}`, params);
 	return data.results
@@ -395,6 +457,10 @@ export async function getMovieDetails(id: number): Promise<TmdbMediaDetails> {
 		releaseDate: data.release_date,
 		genres: data.genres.map((genre) => genre.name),
 		voteAverage: data.vote_average,
+		voteCount: data.vote_count,
+		popularity: data.popularity,
+		originalLanguage: data.original_language,
+		originCountry: data.production_countries.map((country) => country.iso_3166_1),
 		status: data.status,
 		runtimeMinutes: data.runtime,
 		numberOfSeasons: null,
@@ -419,6 +485,10 @@ export async function getTvDetails(id: number): Promise<TmdbMediaDetails> {
 		releaseDate: data.first_air_date,
 		genres: data.genres.map((genre) => genre.name),
 		voteAverage: data.vote_average,
+		voteCount: data.vote_count,
+		popularity: data.popularity,
+		originalLanguage: data.original_language,
+		originCountry: data.origin_country,
 		status: data.status,
 		runtimeMinutes: null,
 		numberOfSeasons: data.number_of_seasons,
@@ -479,6 +549,28 @@ export async function getSimilar(
 	id: number
 ): Promise<TmdbSearchResultItem[]> {
 	return fetchResultsList(`/${mediaType}/${id}/similar`, mediaType);
+}
+
+/** Recomendaciones de TMDb (`/movie|tv/{id}/recommendations`) — distinto de `/similar`: se basa en
+ * interacciones de usuarios de TMDb, no solo en género/palabras clave. Para títulos de nicho puede
+ * devolver pocos o ningún resultado; llamarla siempre con `.catch(() => [])`. */
+export async function getRecommendations(
+	mediaType: TmdbMediaType,
+	id: number
+): Promise<TmdbSearchResultItem[]> {
+	return fetchResultsList(`/${mediaType}/${id}/recommendations`, mediaType);
+}
+
+/** Keywords temáticas de una película o serie (`/movie|tv/{id}/keywords`). El shape de la
+ * respuesta difiere entre movie (`keywords`) y tv (`results`) — asimetría real de la API v3.
+ * Devuelve id+nombre (no solo el nombre) porque `discoverTitles`/`with_keywords` filtra por id. */
+export async function getKeywords(mediaType: TmdbMediaType, id: number): Promise<TmdbGenre[]> {
+	if (mediaType === 'movie') {
+		const data = await tmdbFetch<TmdbRawMovieKeywordsResponse>(`/movie/${id}/keywords`);
+		return data.keywords;
+	}
+	const data = await tmdbFetch<TmdbRawTvKeywordsResponse>(`/tv/${id}/keywords`);
+	return data.results;
 }
 
 /** Detalle completo de una película o serie, según `mediaType` (conveniencia sobre las dos funciones anteriores). */
