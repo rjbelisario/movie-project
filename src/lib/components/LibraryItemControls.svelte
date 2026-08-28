@@ -16,13 +16,35 @@
 	let status = $state(initialStatus);
 	let rating = $state(initialRating ?? 0);
 	let notes = $state(initialNotes ?? '');
+	let savingStatus = $state(false);
 	let saving = $state(false);
 	let deleting = $state(false);
 
 	const statusOptions: { value: LibraryItem['status']; label: string }[] = [
-		{ value: 'planned', label: 'Pendiente' },
-		{ value: 'completed', label: 'Completada' }
+		{ value: 'completed', label: '✓ Vista' },
+		{ value: 'planned', label: 'Pendiente' }
 	];
+
+	/** Cambia el estado al instante (sin esperar al botón Guardar, que es solo para rating/notas). */
+	async function setStatus(next: LibraryItem['status']) {
+		if (next === status || savingStatus) return;
+		const previous = status;
+		status = next;
+		savingStatus = true;
+		try {
+			const response = await fetch(`/api/library/${item.id}`, {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ status: next })
+			});
+			if (response.ok) onUpdate(await response.json());
+			else status = previous;
+		} catch {
+			status = previous;
+		} finally {
+			savingStatus = false;
+		}
+	}
 
 	async function save() {
 		saving = true;
@@ -30,7 +52,7 @@
 			const response = await fetch(`/api/library/${item.id}`, {
 				method: 'PATCH',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ status, rating: rating || null, notes: notes || null })
+				body: JSON.stringify({ rating: rating || null, notes: notes || null })
 			});
 			if (response.ok) onUpdate(await response.json());
 		} finally {
@@ -54,8 +76,9 @@
 		<div class="flex flex-wrap gap-2">
 			{#each statusOptions as option (option.value)}
 				<button
-					onclick={() => (status = option.value)}
-					class="rounded-full px-3 py-1.5 text-sm font-medium transition-colors {status ===
+					onclick={() => setStatus(option.value)}
+					disabled={savingStatus}
+					class="rounded-full px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-60 {status ===
 					option.value
 						? 'bg-purple-500 text-purple-50'
 						: 'bg-surface text-text-secondary hover:bg-surface-hover'}"
@@ -65,35 +88,39 @@
 			{/each}
 		</div>
 
-		<div class="flex flex-wrap items-center gap-4">
-			<div class="flex items-center gap-1">
-				{#each [1, 2, 3, 4, 5] as n (n)}
-					<button
-						onclick={() => (rating = rating === n ? 0 : n)}
-						class="text-xl leading-none {n <= rating ? 'text-rating' : 'text-shade-700'}"
-						aria-label="Calificar {n} de 5"
-					>
-						★
-					</button>
-				{/each}
-			</div>
+		{#if status === 'completed'}
+			<div class="flex flex-wrap items-center gap-4">
+				<div class="flex items-center gap-1">
+					{#each [1, 2, 3, 4, 5] as n (n)}
+						<button
+							onclick={() => (rating = rating === n ? 0 : n)}
+							class="text-xl leading-none {n <= rating ? 'text-rating' : 'text-shade-700'}"
+							aria-label="Calificar {n} de 5"
+						>
+							★
+						</button>
+					{/each}
+				</div>
 
-			<textarea
-				bind:value={notes}
-				rows="1"
-				placeholder="Notas personales..."
-				class="min-w-48 flex-1 resize-none rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary"
-			></textarea>
-		</div>
+				<textarea
+					bind:value={notes}
+					rows="1"
+					placeholder="Notas personales..."
+					class="min-w-48 flex-1 resize-none rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary"
+				></textarea>
+			</div>
+		{/if}
 
 		<div class="flex gap-3">
-			<button
-				onclick={save}
-				disabled={saving}
-				class="rounded-lg bg-purple-600 px-4 py-2 font-medium text-purple-50 transition hover:bg-purple-700 disabled:opacity-50"
-			>
-				{saving ? 'Guardando…' : 'Guardar'}
-			</button>
+			{#if status === 'completed'}
+				<button
+					onclick={save}
+					disabled={saving}
+					class="rounded-lg bg-purple-600 px-4 py-2 font-medium text-purple-50 transition hover:bg-purple-700 disabled:opacity-50"
+				>
+					{saving ? 'Guardando…' : 'Guardar'}
+				</button>
+			{/if}
 			<button
 				onclick={remove}
 				disabled={deleting}
@@ -105,47 +132,54 @@
 	</div>
 {:else}
 	<div class="flex flex-col gap-1.5 text-xs">
-		<select
-			bind:value={status}
-			class="rounded border border-border bg-shade-950 px-1.5 py-1 text-text-primary"
-		>
+		<div class="flex gap-1">
 			{#each statusOptions as option (option.value)}
-				<option value={option.value}>{option.label}</option>
+				<button
+					onclick={() => setStatus(option.value)}
+					disabled={savingStatus}
+					class="flex-1 rounded px-1.5 py-1 font-medium transition-colors disabled:opacity-60 {status ===
+					option.value
+						? 'bg-purple-500 text-purple-50'
+						: 'bg-shade-950 text-text-secondary hover:bg-surface-hover'}"
+				>
+					{option.label}
+				</button>
 			{/each}
-		</select>
+		</div>
 
-		<select
-			bind:value={rating}
-			class="rounded border border-border bg-shade-950 px-1.5 py-1 text-text-primary"
-		>
-			<option value={0}>Sin calificar</option>
-			{#each [1, 2, 3, 4, 5] as n (n)}
-				<option value={n}>{'★'.repeat(n)}</option>
-			{/each}
-		</select>
+		{#if status === 'completed'}
+			<select
+				bind:value={rating}
+				class="rounded border border-border bg-shade-950 px-1.5 py-1 text-text-primary"
+			>
+				<option value={0}>Sin calificar</option>
+				{#each [1, 2, 3, 4, 5] as n (n)}
+					<option value={n}>{'★'.repeat(n)}</option>
+				{/each}
+			</select>
 
-		<textarea
-			bind:value={notes}
-			rows="2"
-			placeholder="Notas..."
-			class="resize-none rounded border border-border bg-shade-950 px-1.5 py-1 text-text-primary placeholder:text-text-secondary"
-		></textarea>
+			<textarea
+				bind:value={notes}
+				rows="2"
+				placeholder="Notas..."
+				class="resize-none rounded border border-border bg-shade-950 px-1.5 py-1 text-text-primary placeholder:text-text-secondary"
+			></textarea>
 
-		<div class="flex gap-1.5">
 			<button
 				onclick={save}
 				disabled={saving}
-				class="flex-1 rounded bg-purple-600 py-1 font-medium text-purple-50 transition hover:bg-purple-700 disabled:opacity-50"
+				class="rounded bg-purple-600 py-1 font-medium text-purple-50 transition hover:bg-purple-700 disabled:opacity-50"
 			>
 				{saving ? 'Guardando…' : 'Guardar'}
 			</button>
-			<button
-				onclick={remove}
-				disabled={deleting}
-				class="rounded bg-red-700 px-2 py-1 font-medium text-shade-10 transition hover:bg-red-500 disabled:opacity-50"
-			>
-				{deleting ? '…' : 'Eliminar'}
-			</button>
-		</div>
+		{/if}
+
+		<button
+			onclick={remove}
+			disabled={deleting}
+			class="rounded bg-red-700 py-1 font-medium text-shade-10 transition hover:bg-red-500 disabled:opacity-50"
+		>
+			{deleting ? '…' : 'Eliminar'}
+		</button>
 	</div>
 {/if}

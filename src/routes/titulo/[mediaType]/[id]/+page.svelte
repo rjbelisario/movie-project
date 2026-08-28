@@ -43,11 +43,11 @@
 		data.trailerKey ? `https://www.youtube.com/watch?v=${data.trailerKey}` : null
 	);
 
-	let adding = $state(false);
+	let addingStatus = $state<LibraryItem['status'] | null>(null);
 	let addError = $state<string | null>(null);
 
-	async function addToLibrary() {
-		adding = true;
+	async function addToLibrary(status: LibraryItem['status']) {
+		addingStatus = status;
 		addError = null;
 		try {
 			const response = await fetch('/api/library', {
@@ -61,7 +61,7 @@
 					overview: details.overview,
 					releaseDate: details.releaseDate,
 					genres: details.genres,
-					status: 'planned'
+					status
 				})
 			});
 			if (!response.ok) throw new Error('No se pudo agregar.');
@@ -69,7 +69,7 @@
 		} catch {
 			addError = 'No se pudo agregar el título a la biblioteca.';
 		} finally {
-			adding = false;
+			addingStatus = null;
 		}
 	}
 
@@ -186,13 +186,22 @@
 		{:else}
 			<div class="mt-6 flex flex-wrap items-start gap-3">
 				<div>
-					<button
-						onclick={addToLibrary}
-						disabled={adding}
-						class="rounded-lg bg-purple-600 px-4 py-2 font-medium text-purple-50 transition hover:bg-purple-700 disabled:opacity-50"
-					>
-						{adding ? 'Agregando…' : '+ Agregar a mi biblioteca'}
-					</button>
+					<div class="flex flex-wrap gap-3">
+						<button
+							onclick={() => addToLibrary('completed')}
+							disabled={addingStatus !== null}
+							class="rounded-lg bg-purple-600 px-4 py-2 font-medium text-purple-50 transition hover:bg-purple-700 disabled:opacity-50"
+						>
+							{addingStatus === 'completed' ? 'Guardando…' : '✓ Marcar como vista'}
+						</button>
+						<button
+							onclick={() => addToLibrary('planned')}
+							disabled={addingStatus !== null}
+							class="rounded-lg border border-border px-4 py-2 font-medium text-text-primary transition hover:bg-surface-hover disabled:opacity-50"
+						>
+							{addingStatus === 'planned' ? 'Guardando…' : '+ Agregar a watchlist'}
+						</button>
+					</div>
 					{#if addError}
 						<p class="mt-2 text-sm text-red-400">{addError}</p>
 					{/if}
