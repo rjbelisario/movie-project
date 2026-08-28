@@ -121,15 +121,16 @@ pnpm run dev
    [.env.example](.env.example)).
 4. Registrar `https://<dominio-de-producción>/api/trakt/callback` como redirect URI en la app
    de Trakt.
-5. Desplegar. El contenedor expone el puerto `3000`, corre `drizzle-kit migrate` contra Turso
-   automáticamente al arrancar y responde `200 ok` en `/health` (usado por el `HEALTHCHECK` de
-   Docker y se puede reusar como health check path en Dokploy).
+5. Desplegar. El contenedor expone el puerto `3010` y responde `200 ok` en `/health` (usado por
+   el `HEALTHCHECK` de Docker y se puede reusar como health check path en Dokploy). El esquema
+   de la base se aplica aparte con `pnpm run db:push` contra la `DATABASE_URL` de Turso, no
+   corre automáticamente al arrancar el contenedor.
 
 El [docker-compose.yml](docker-compose.yml) no publica el puerto al host a propósito (`expose`,
 no `ports`) — en Dokploy el proxy Traefik interno enruta directo al contenedor por su red, y
 publicar el puerto ahí puede chocar con otras apps del mismo servidor. Para levantarlo localmente
-y poder entrar por `localhost:3000`, agregar el mapeo al vuelo:
-`docker compose run --rm --service-ports app` (o correr `docker build -t movie-project . && docker run --env-file .env -p 3000:3000 movie-project` directamente).
+y poder entrar por `localhost:3010`, agregar el mapeo al vuelo:
+`docker compose run --rm --service-ports app` (o correr `docker build -t movie-project . && docker run --env-file .env -p 3010:3010 movie-project` directamente).
 
 ## Estructura del proyecto
 
