@@ -1,1 +1,70 @@
 @import 'tailwindcss';
+
+/**
+ * Sistema de color adaptado de los design tokens públicos de trakt-web
+ * (github.com/trakt/trakt-web — projects/client/src/style/palette/*.css y
+ * theme/modes.scss): escalas OKLCH por matiz + una escala neutra "shade" con
+ * un ligerísimo tinte púrpura (hue 300), acento de marca en púrpura (hue
+ * 314.2). Solo se portaron los pasos de escala que esta app usa.
+ */
+@theme {
+	--color-shade-10: oklch(99% 0.004 300);
+	--color-shade-50: oklch(95.5% 0.007 300);
+	--color-shade-200: oklch(78% 0.012 300);
+	--color-shade-300: oklch(67% 0.013 300);
+	--color-shade-400: oklch(61% 0.013 300);
+	--color-shade-500: oklch(51% 0.013 300);
+	--color-shade-700: oklch(38% 0.012 300);
+	--color-shade-800: oklch(30% 0.011 300);
+	--color-shade-900: oklch(24% 0.01 300);
+	--color-shade-920: oklch(19.5% 0.009 300);
+	--color-shade-930: oklch(16.5% 0.008 300);
+	--color-shade-950: oklch(13% 0.007 300);
+
+	--color-purple-50: oklch(97% 0.0196 314.2);
+	--color-purple-300: oklch(71% 0.1599 314.2);
+	--color-purple-400: oklch(63.5% 0.1906 314.2);
+	--color-purple-500: oklch(56.1% 0.205 314.2);
+	--color-purple-600: oklch(51% 0.1947 314.2);
+	--color-purple-700: oklch(43% 0.1681 314.2);
+	--color-purple-900: oklch(29% 0.1128 314.2);
+	--color-purple-950: oklch(19% 0.082 314.2);
+
+	--color-blue-400: oklch(70% 0.1442 245);
+	--color-blue-500: oklch(66% 0.155 245);
+	--color-blue-700: oklch(49% 0.1185 245);
+
+	--color-green-400: oklch(69% 0.1321 161);
+	--color-green-500: oklch(65% 0.142 161);
+	--color-green-700: oklch(48% 0.1027 161);
+
+	--color-red-400: oklch(62% 0.171 25);
+	--color-red-500: oklch(56% 0.18 25);
+	--color-red-700: oklch(43% 0.1476 25);
+
+	--color-orange-400: oklch(68% 0.186 47);
+	--color-orange-500: oklch(64% 0.1701 47);
+
+	/* Tokens semánticos (equivalentes al modo oscuro de theme/modes.scss) */
+	--color-background: color-mix(in oklch, var(--color-shade-920) 97%, var(--color-purple-900));
+	--color-surface: var(--color-shade-930);
+	--color-surface-hover: var(--color-shade-900);
+	--color-border: var(--color-shade-700);
+	--color-text-primary: var(--color-shade-10);
+	--color-text-secondary: var(--color-shade-300);
+	--color-emphasis: var(--color-purple-300);
+	--color-rating: var(--color-purple-500);
+}
+
+body {
+	background: var(--color-background);
+	color: var(--color-text-primary);
+}
+
+/* Fila de carrusel: scroll horizontal sin barra de scroll visible. */
+.scroll-row {
+	scrollbar-width: none;
+}
+.scroll-row::-webkit-scrollbar {
+	display: none;
+}

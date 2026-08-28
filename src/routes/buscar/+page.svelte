@@ -57,40 +57,42 @@
 
 <svelte:head><title>Buscar — Mi Biblioteca</title></svelte:head>
 
-<h1 class="mb-4 text-xl font-semibold">Buscar películas y series</h1>
+<h1 class="mb-4 text-xl font-semibold text-text-primary">Buscar películas y series</h1>
 
 <form onsubmit={runSearch} class="mb-6 flex gap-2">
 	<input
 		type="search"
 		bind:value={query}
 		placeholder="Ej. Inception, Breaking Bad..."
-		class="flex-1 rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-2 text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+		class="flex-1 rounded-lg border border-border bg-surface px-4 py-2 text-text-primary placeholder:text-text-secondary focus:ring-2 focus:ring-purple-500 focus:outline-none"
 	/>
 	<button
 		type="submit"
 		disabled={loading}
-		class="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
+		class="rounded-lg bg-purple-600 px-4 py-2 font-medium text-purple-50 transition hover:bg-purple-700 disabled:opacity-50"
 	>
 		{loading ? 'Buscando…' : 'Buscar'}
 	</button>
 </form>
 
 {#if errorMessage}
-	<p class="mb-4 rounded-lg bg-red-900/50 px-4 py-2 text-sm text-red-200">{errorMessage}</p>
+	<p class="mb-4 rounded-lg bg-red-900/50 px-4 py-2 text-sm text-red-400">{errorMessage}</p>
 {/if}
 
 {#if searched}
 	<CardGrid items={results} emptyMessage="Sin resultados para esa búsqueda.">
 		{#snippet actions(item: CardItem)}
 			{#if addedTmdbIds.has(item.tmdbId)}
-				<span class="block w-full rounded bg-green-700/50 py-1.5 text-center text-sm text-green-300">
+				<span
+					class="block w-full rounded bg-green-700/40 py-1.5 text-center text-sm text-green-400"
+				>
 					✓ En biblioteca
 				</span>
 			{:else}
 				<button
 					onclick={() => addItem(item)}
 					disabled={addingTmdbId === item.tmdbId}
-					class="w-full rounded bg-neutral-700 py-1.5 text-sm font-medium transition hover:bg-blue-600 disabled:opacity-50"
+					class="w-full rounded bg-surface-hover py-1.5 text-sm font-medium text-text-primary transition hover:bg-purple-600 disabled:opacity-50"
 				>
 					{addingTmdbId === item.tmdbId ? 'Agregando…' : '+ Agregar'}
 				</button>
@@ -98,5 +100,5 @@
 		{/snippet}
 	</CardGrid>
 {:else}
-	<p class="text-neutral-400">Escribe un título para buscar en TMDb.</p>
+	<p class="text-text-secondary">Escribe un título para buscar en TMDb.</p>
 {/if}

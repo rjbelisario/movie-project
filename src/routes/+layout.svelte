@@ -15,18 +15,22 @@
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
-<div class="min-h-screen bg-neutral-900 text-neutral-100">
-	<header class="border-b border-neutral-800">
+<div class="min-h-screen bg-background text-text-primary">
+	<header
+		class="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur-md"
+	>
 		<nav class="mx-auto flex max-w-6xl items-center gap-6 px-4 py-3">
-			<span class="font-bold tracking-tight">🎬 Mi Biblioteca</span>
-			<div class="flex gap-4 text-sm">
+			<a href="/" class="flex items-center gap-1.5 font-bold tracking-tight">
+				<span class="text-purple-400">🎬</span> Mi Biblioteca
+			</a>
+			<div class="flex gap-1 text-sm">
 				{#each links as link (link.href)}
 					<a
 						href={link.href}
-						class="rounded px-2 py-1 transition hover:bg-neutral-800 {page.url.pathname ===
-						link.href
-							? 'bg-neutral-800 text-white'
-							: 'text-neutral-400'}"
+						class="rounded-full px-3 py-1.5 font-medium transition-colors {page.url
+							.pathname === link.href
+							? 'bg-purple-500 text-purple-50'
+							: 'text-text-secondary hover:bg-surface-hover hover:text-text-primary'}"
 					>
 						{link.label}
 					</a>

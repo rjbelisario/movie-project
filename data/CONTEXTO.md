@@ -23,6 +23,9 @@ Este archivo se referenció directamente en los prompts que generaron:
 - La página de estadísticas (`/estadisticas`), para diseñar las agregaciones (conteo por
   género, distribución por estado, promedio de rating) sobre datos representativos antes de
   tener la base de datos poblada con contenido real.
+- La página de detalle (`/titulo/[mediaType]/[id]`) y los controles de edición
+  (`LibraryItemControls.svelte`), que combinan estos mismos campos con los datos en vivo de
+  TMDb (`src/lib/server/tmdb.ts`) para mostrar/editar el estado de un título en la biblioteca.
 
 Esto es lo que exige la rúbrica: el agente construyó la interfaz **a partir de** la estructura
 de datos, no al revés.

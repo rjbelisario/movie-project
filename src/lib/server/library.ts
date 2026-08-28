@@ -37,6 +37,18 @@ export async function getLibraryItem(id: number): Promise<LibraryItem | undefine
 	return item;
 }
 
+/** Busca un item de la biblioteca por su (tmdbId, mediaType), o `undefined` si no está guardado. */
+export async function findLibraryItemByTmdb(
+	tmdbId: number,
+	mediaType: LibraryItem['mediaType']
+): Promise<LibraryItem | undefined> {
+	const [item] = await db
+		.select()
+		.from(libraryItems)
+		.where(and(eq(libraryItems.tmdbId, tmdbId), eq(libraryItems.mediaType, mediaType)));
+	return item;
+}
+
 /** Agrega un nuevo item a la biblioteca. */
 export async function addToLibrary(item: NewLibraryItem): Promise<LibraryItem> {
 	const [inserted] = await db.insert(libraryItems).values(item).returning();

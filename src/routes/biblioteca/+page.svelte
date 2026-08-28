@@ -34,13 +34,13 @@
 <svelte:head><title>Biblioteca — Mi Biblioteca</title></svelte:head>
 
 <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
-	<h1 class="text-xl font-semibold">Mi biblioteca</h1>
+	<h1 class="text-xl font-semibold text-text-primary">Mi biblioteca</h1>
 
 	<div class="flex gap-2">
 		<select
 			value={data.status ?? ''}
 			onchange={(e) => updateFilter('status', e.currentTarget.value)}
-			class="rounded border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-sm"
+			class="rounded border border-border bg-surface px-3 py-1.5 text-sm text-text-primary"
 		>
 			<option value="">Todos los estados</option>
 			<option value="planned">Pendiente</option>
@@ -52,7 +52,7 @@
 		<select
 			value={data.mediaType ?? ''}
 			onchange={(e) => updateFilter('mediaType', e.currentTarget.value)}
-			class="rounded border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-sm"
+			class="rounded border border-border bg-surface px-3 py-1.5 text-sm text-text-primary"
 		>
 			<option value="">Películas y series</option>
 			<option value="movie">Solo películas</option>

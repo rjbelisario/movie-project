@@ -17,7 +17,7 @@
 </script>
 
 {#if items.length === 0}
-	<p class="py-12 text-center text-neutral-400">{emptyMessage}</p>
+	<p class="py-12 text-center text-text-secondary">{emptyMessage}</p>
 {:else}
 	<div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
 		{#each items as item (keyOf(item))}

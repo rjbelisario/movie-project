@@ -45,7 +45,7 @@
 <div class="flex flex-col gap-1.5 text-xs">
 	<select
 		bind:value={status}
-		class="rounded border border-neutral-600 bg-neutral-900 px-1.5 py-1 text-neutral-100"
+		class="rounded border border-border bg-shade-950 px-1.5 py-1 text-text-primary"
 	>
 		<option value="planned">Pendiente</option>
 		<option value="watching">Viendo</option>
@@ -55,7 +55,7 @@
 
 	<select
 		bind:value={rating}
-		class="rounded border border-neutral-600 bg-neutral-900 px-1.5 py-1 text-neutral-100"
+		class="rounded border border-border bg-shade-950 px-1.5 py-1 text-text-primary"
 	>
 		<option value={0}>Sin calificar</option>
 		{#each [1, 2, 3, 4, 5] as n (n)}
@@ -67,21 +67,21 @@
 		bind:value={notes}
 		rows="2"
 		placeholder="Notas..."
-		class="resize-none rounded border border-neutral-600 bg-neutral-900 px-1.5 py-1 text-neutral-100 placeholder:text-neutral-500"
+		class="resize-none rounded border border-border bg-shade-950 px-1.5 py-1 text-text-primary placeholder:text-text-secondary"
 	></textarea>
 
 	<div class="flex gap-1.5">
 		<button
 			onclick={save}
 			disabled={saving}
-			class="flex-1 rounded bg-blue-600 py-1 font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
+			class="flex-1 rounded bg-purple-600 py-1 font-medium text-purple-50 transition hover:bg-purple-700 disabled:opacity-50"
 		>
 			{saving ? 'Guardando…' : 'Guardar'}
 		</button>
 		<button
 			onclick={remove}
 			disabled={deleting}
-			class="rounded bg-red-800 px-2 py-1 font-medium text-white transition hover:bg-red-700 disabled:opacity-50"
+			class="rounded bg-red-700 px-2 py-1 font-medium text-shade-10 transition hover:bg-red-500 disabled:opacity-50"
 		>
 			{deleting ? '…' : 'Eliminar'}
 		</button>
