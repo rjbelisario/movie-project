@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 export const libraryItems = sqliteTable('library_items', {
 	id: integer('id').primaryKey({ autoIncrement: true }),
@@ -24,3 +24,31 @@ export const libraryItems = sqliteTable('library_items', {
 
 export type LibraryItem = typeof libraryItems.$inferSelect;
 export type NewLibraryItem = typeof libraryItems.$inferInsert;
+
+/**
+ * Progreso por episodio de una serie. La presencia de una fila = episodio visto; no hay
+ * columna booleana porque no tiene sentido guardar un episodio "no visto" explícitamente.
+ */
+export const episodeProgress = sqliteTable(
+	'episode_progress',
+	{
+		id: integer('id').primaryKey({ autoIncrement: true }),
+		libraryItemId: integer('library_item_id')
+			.notNull()
+			.references(() => libraryItems.id, { onDelete: 'cascade' }),
+		seasonNumber: integer('season_number').notNull(),
+		episodeNumber: integer('episode_number').notNull(),
+		watchedAt: text('watched_at')
+			.notNull()
+			.$defaultFn(() => new Date().toISOString())
+	},
+	(table) => [
+		uniqueIndex('episode_progress_unique').on(
+			table.libraryItemId,
+			table.seasonNumber,
+			table.episodeNumber
+		)
+	]
+);
+
+export type EpisodeProgress = typeof episodeProgress.$inferSelect;

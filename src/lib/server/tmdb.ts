@@ -42,6 +42,32 @@ export interface TmdbMediaDetails {
 	numberOfSeasons: number | null;
 	/** Número de episodios (solo series). */
 	numberOfEpisodes: number | null;
+	/** Temporadas de la serie (vacío para películas). Excluye la temporada 0 (especiales). */
+	seasons: TmdbSeasonSummary[];
+}
+
+export interface TmdbSeasonSummary {
+	seasonNumber: number;
+	name: string;
+	episodeCount: number;
+	posterPath: string | null;
+	airDate: string | null;
+}
+
+export interface TmdbEpisode {
+	seasonNumber: number;
+	episodeNumber: number;
+	name: string;
+	overview: string;
+	stillPath: string | null;
+	airDate: string | null;
+	runtimeMinutes: number | null;
+}
+
+export interface TmdbSeasonDetails {
+	seasonNumber: number;
+	name: string;
+	episodes: TmdbEpisode[];
 }
 
 // --- Formas crudas de las respuestas de la API de TMDb (solo los campos que usamos) ---
@@ -83,6 +109,14 @@ interface TmdbRawMovieDetails {
 	runtime: number | null;
 }
 
+interface TmdbRawSeasonSummary {
+	season_number: number;
+	name: string;
+	episode_count: number;
+	poster_path: string | null;
+	air_date: string | null;
+}
+
 interface TmdbRawTvDetails {
 	id: number;
 	name: string;
@@ -96,6 +130,23 @@ interface TmdbRawTvDetails {
 	status: string;
 	number_of_seasons: number | null;
 	number_of_episodes: number | null;
+	seasons: TmdbRawSeasonSummary[];
+}
+
+interface TmdbRawEpisode {
+	season_number: number;
+	episode_number: number;
+	name: string;
+	overview: string;
+	still_path: string | null;
+	air_date: string | null;
+	runtime: number | null;
+}
+
+interface TmdbRawSeasonDetails {
+	season_number: number;
+	name: string;
+	episodes: TmdbRawEpisode[];
 }
 
 /**
@@ -232,7 +283,8 @@ export async function getMovieDetails(id: number): Promise<TmdbMediaDetails> {
 		status: data.status,
 		runtimeMinutes: data.runtime,
 		numberOfSeasons: null,
-		numberOfEpisodes: null
+		numberOfEpisodes: null,
+		seasons: []
 	};
 }
 
@@ -254,7 +306,16 @@ export async function getTvDetails(id: number): Promise<TmdbMediaDetails> {
 		status: data.status,
 		runtimeMinutes: null,
 		numberOfSeasons: data.number_of_seasons,
-		numberOfEpisodes: data.number_of_episodes
+		numberOfEpisodes: data.number_of_episodes,
+		seasons: data.seasons
+			.filter((season) => season.season_number > 0)
+			.map((season) => ({
+				seasonNumber: season.season_number,
+				name: season.name,
+				episodeCount: season.episode_count,
+				posterPath: season.poster_path,
+				airDate: season.air_date
+			}))
 	};
 }
 
@@ -264,4 +325,26 @@ export async function getMediaDetails(
 	id: number
 ): Promise<TmdbMediaDetails> {
 	return mediaType === 'movie' ? getMovieDetails(id) : getTvDetails(id);
+}
+
+/** Lista de episodios de una temporada de una serie (endpoint `/tv/{id}/season/{season_number}`). */
+export async function getSeasonDetails(
+	tvId: number,
+	seasonNumber: number
+): Promise<TmdbSeasonDetails> {
+	const data = await tmdbFetch<TmdbRawSeasonDetails>(`/tv/${tvId}/season/${seasonNumber}`);
+
+	return {
+		seasonNumber: data.season_number,
+		name: data.name,
+		episodes: data.episodes.map((episode) => ({
+			seasonNumber: episode.season_number,
+			episodeNumber: episode.episode_number,
+			name: episode.name,
+			overview: episode.overview,
+			stillPath: episode.still_path,
+			airDate: episode.air_date,
+			runtimeMinutes: episode.runtime
+		}))
+	};
 }

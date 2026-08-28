@@ -1,7 +1,7 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { getMediaDetails } from '$lib/server/tmdb';
-import { findLibraryItemByTmdb } from '$lib/server/library';
+import { findLibraryItemByTmdb, getWatchedEpisodes } from '$lib/server/library';
 import type { TmdbMediaType } from '$lib/server/tmdb';
 
 function parseMediaType(param: string): TmdbMediaType {
@@ -26,6 +26,8 @@ export const load: PageServerLoad = async ({ params }) => {
 	}
 
 	const libraryItem = await findLibraryItemByTmdb(tmdbId, mediaType);
+	const watchedEpisodes =
+		mediaType === 'tv' && libraryItem ? await getWatchedEpisodes(libraryItem.id) : [];
 
-	return { details, libraryItem };
+	return { details, libraryItem, watchedEpisodes };
 };

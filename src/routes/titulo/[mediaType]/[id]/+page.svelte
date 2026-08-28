@@ -2,6 +2,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { posterUrl } from '$lib/tmdb-image';
 	import LibraryItemControls from '$lib/components/LibraryItemControls.svelte';
+	import EpisodeTracker from '$lib/components/EpisodeTracker.svelte';
 	import type { LibraryItem } from '$lib/server/db/schema';
 	import type { PageProps } from './$types';
 
@@ -149,3 +150,17 @@
 		</div>
 	</div>
 </div>
+
+{#if details.mediaType === 'tv' && details.seasons.length > 0}
+	<section class="mt-8">
+		<h2 class="mb-3 text-lg font-semibold text-text-primary">Episodios</h2>
+		{#key details.tmdbId}
+			<EpisodeTracker
+				tvId={details.tmdbId}
+				seasons={details.seasons}
+				libraryItemId={data.libraryItem?.id}
+				initialWatched={data.watchedEpisodes}
+			/>
+		{/key}
+	</section>
+{/if}

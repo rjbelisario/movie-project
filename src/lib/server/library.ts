@@ -1,6 +1,12 @@
 import { and, desc, eq } from 'drizzle-orm';
 import { db } from './db';
-import { libraryItems, type LibraryItem, type NewLibraryItem } from './db/schema';
+import {
+	libraryItems,
+	episodeProgress,
+	type LibraryItem,
+	type NewLibraryItem,
+	type EpisodeProgress
+} from './db/schema';
 
 /**
  * Capa de acceso a la tabla `library_items` mediante Drizzle ORM.
@@ -78,6 +84,54 @@ export async function removeFromLibrary(id: number): Promise<boolean> {
 		.where(eq(libraryItems.id, id))
 		.returning({ id: libraryItems.id });
 	return deleted.length > 0;
+}
+
+/** Episodios vistos de una serie de la biblioteca, como pares (temporada, episodio). */
+export async function getWatchedEpisodes(
+	libraryItemId: number
+): Promise<Pick<EpisodeProgress, 'seasonNumber' | 'episodeNumber'>[]> {
+	return db
+		.select({
+			seasonNumber: episodeProgress.seasonNumber,
+			episodeNumber: episodeProgress.episodeNumber
+		})
+		.from(episodeProgress)
+		.where(eq(episodeProgress.libraryItemId, libraryItemId));
+}
+
+/** Número total de episodios vistos de una serie de la biblioteca. */
+export async function countWatchedEpisodes(libraryItemId: number): Promise<number> {
+	const rows = await getWatchedEpisodes(libraryItemId);
+	return rows.length;
+}
+
+/** Marca un episodio como visto. Idempotente: si ya estaba marcado, no hace nada. */
+export async function markEpisodeWatched(
+	libraryItemId: number,
+	seasonNumber: number,
+	episodeNumber: number
+): Promise<void> {
+	await db
+		.insert(episodeProgress)
+		.values({ libraryItemId, seasonNumber, episodeNumber })
+		.onConflictDoNothing();
+}
+
+/** Quita la marca de visto de un episodio. Idempotente: si no estaba marcado, no hace nada. */
+export async function markEpisodeUnwatched(
+	libraryItemId: number,
+	seasonNumber: number,
+	episodeNumber: number
+): Promise<void> {
+	await db
+		.delete(episodeProgress)
+		.where(
+			and(
+				eq(episodeProgress.libraryItemId, libraryItemId),
+				eq(episodeProgress.seasonNumber, seasonNumber),
+				eq(episodeProgress.episodeNumber, episodeNumber)
+			)
+		);
 }
 
 export interface LibraryGenreCount {
