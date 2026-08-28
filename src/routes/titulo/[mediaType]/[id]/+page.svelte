@@ -147,12 +147,23 @@
 			{/if}
 		</div>
 
-		{#if details.genres.length > 0}
+		{#if data.genres.length > 0}
 			<div class="mt-3 flex flex-wrap gap-2">
-				{#each details.genres as genre (genre)}
-					<span class="rounded-full bg-surface px-3 py-1 text-xs text-text-secondary">
-						{genre}
-					</span>
+				{#each data.genres as genre (genre.name)}
+					{#if genre.id !== null}
+						<a
+							href="/buscar?genre={genre.id}&mediaType={details.mediaType}&name={encodeURIComponent(
+								genre.name
+							)}"
+							class="rounded-full bg-surface px-3 py-1 text-xs text-text-secondary transition-colors hover:bg-purple-500 hover:text-purple-50"
+						>
+							{genre.name}
+						</a>
+					{:else}
+						<span class="rounded-full bg-surface px-3 py-1 text-xs text-text-secondary">
+							{genre.name}
+						</span>
+					{/if}
 				{/each}
 			</div>
 		{/if}

@@ -15,6 +15,11 @@ const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 
 export type TmdbMediaType = 'movie' | 'tv';
 
+export interface TmdbGenre {
+	id: number;
+	name: string;
+}
+
 export interface TmdbSearchResultItem {
 	tmdbId: number;
 	mediaType: TmdbMediaType;
@@ -108,6 +113,10 @@ interface TmdbRawResultsResponse {
 	results: TmdbRawSearchResult[];
 	total_pages: number;
 	total_results: number;
+}
+
+interface TmdbRawGenreListResponse {
+	genres: TmdbRawGenre[];
 }
 
 interface TmdbRawMovieDetails {
@@ -309,6 +318,26 @@ export async function getUpcomingMovies(): Promise<TmdbSearchResultItem[]> {
 /** Series actualmente en emisión (`/tv/on_the_air`). */
 export async function getOnTheAirTv(): Promise<TmdbSearchResultItem[]> {
 	return fetchResultsList('/tv/on_the_air', 'tv');
+}
+
+/** Lista de géneros de TMDb para películas o series (`/genre/{mediaType}/list`). */
+export async function getGenres(mediaType: TmdbMediaType): Promise<TmdbGenre[]> {
+	const data = await tmdbFetch<TmdbRawGenreListResponse>(`/genre/${mediaType}/list`);
+	return data.genres;
+}
+
+/** Títulos de un género dado, ordenados por popularidad (`/discover/{mediaType}`). */
+export async function discoverByGenre(
+	mediaType: TmdbMediaType,
+	genreId: number
+): Promise<TmdbSearchResultItem[]> {
+	const data = await tmdbFetch<TmdbRawResultsResponse>(`/discover/${mediaType}`, {
+		with_genres: String(genreId),
+		sort_by: 'popularity.desc'
+	});
+	return data.results
+		.map((raw) => mapSearchResult(raw, mediaType))
+		.filter((item): item is TmdbSearchResultItem => item !== null);
 }
 
 /** Detalle completo de una película por su id de TMDb (endpoint `/movie/{id}`). */

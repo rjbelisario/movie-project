@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import CardGrid from '$lib/components/CardGrid.svelte';
 	import type { CardItem } from '$lib/types';
 
@@ -9,11 +10,13 @@
 	let addedTmdbIds = $state(new Set<number>());
 	let addingTmdbId = $state<number | null>(null);
 	let errorMessage = $state<string | null>(null);
+	let genreFilterName = $state<string | null>(null);
 
 	async function runSearch(event: SubmitEvent) {
 		event.preventDefault();
 		if (!query.trim()) return;
 
+		genreFilterName = null;
 		loading = true;
 		errorMessage = null;
 		try {
@@ -27,6 +30,33 @@
 			loading = false;
 		}
 	}
+
+	async function runGenreSearch(genreId: string, mediaType: string, name: string | null) {
+		loading = true;
+		errorMessage = null;
+		genreFilterName = name;
+		try {
+			const response = await fetch(
+				`/api/discover?genre=${encodeURIComponent(genreId)}&mediaType=${encodeURIComponent(mediaType)}`
+			);
+			if (!response.ok) throw new Error('No se pudo cargar el género.');
+			results = await response.json();
+			searched = true;
+		} catch {
+			errorMessage = 'No se pudieron cargar títulos de ese género.';
+		} finally {
+			loading = false;
+		}
+	}
+
+	$effect(() => {
+		const genreId = page.url.searchParams.get('genre');
+		const mediaType = page.url.searchParams.get('mediaType');
+		const name = page.url.searchParams.get('name');
+		if (genreId && mediaType) {
+			runGenreSearch(genreId, mediaType, name);
+		}
+	});
 
 	async function addItem(item: CardItem) {
 		addingTmdbId = item.tmdbId;
@@ -59,7 +89,7 @@
 
 <h1 class="mb-4 text-xl font-semibold text-text-primary">Buscar películas y series</h1>
 
-<form onsubmit={runSearch} class="mb-6 flex gap-2">
+<form onsubmit={runSearch} class="mb-4 flex gap-2">
 	<input
 		type="search"
 		bind:value={query}
@@ -75,12 +105,24 @@
 	</button>
 </form>
 
+{#if genreFilterName}
+	<div class="mb-4 flex items-center gap-2 text-sm">
+		<span class="text-text-secondary">Género:</span>
+		<span class="rounded-full bg-purple-500 px-3 py-1 font-medium text-purple-50"
+			>{genreFilterName}</span
+		>
+		<a href="/buscar" class="text-text-secondary hover:text-text-primary hover:underline"
+			>✕ Quitar filtro</a
+		>
+	</div>
+{/if}
+
 {#if errorMessage}
 	<p class="mb-4 rounded-lg bg-red-900/50 px-4 py-2 text-sm text-red-400">{errorMessage}</p>
 {/if}
 
 {#if searched}
-	<CardGrid items={results} emptyMessage="Sin resultados para esa búsqueda.">
+	<CardGrid items={results} emptyMessage="Sin resultados.">
 		{#snippet actions(item: CardItem)}
 			{#if addedTmdbIds.has(item.tmdbId)}
 				<span
@@ -99,6 +141,6 @@
 			{/if}
 		{/snippet}
 	</CardGrid>
-{:else}
+{:else if !loading}
 	<p class="text-text-secondary">Escribe un título para buscar en TMDb.</p>
 {/if}

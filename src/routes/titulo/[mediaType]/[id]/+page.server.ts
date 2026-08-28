@@ -1,8 +1,8 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { getMediaDetails, getCredits, getTrailerKey, getSimilar } from '$lib/server/tmdb';
+import { getMediaDetails, getCredits, getTrailerKey, getSimilar, getGenres } from '$lib/server/tmdb';
 import { findLibraryItemByTmdb, getWatchedEpisodes } from '$lib/server/library';
-import type { TmdbMediaType, TmdbCredits, TmdbSearchResultItem } from '$lib/server/tmdb';
+import type { TmdbMediaType, TmdbCredits, TmdbSearchResultItem, TmdbGenre } from '$lib/server/tmdb';
 
 function parseMediaType(param: string): TmdbMediaType {
 	if (param !== 'movie' && param !== 'tv') {
@@ -25,17 +25,19 @@ export const load: PageServerLoad = async ({ params }) => {
 		error(404, 'No se encontró ese título en TMDb.');
 	}
 
-	const [libraryItem, credits, trailerKey, similar] = await Promise.all([
+	const [libraryItem, credits, trailerKey, similar, genreList] = await Promise.all([
 		findLibraryItemByTmdb(tmdbId, mediaType),
-		getCredits(mediaType, tmdbId).catch(
-			(): TmdbCredits => ({ cast: [], directors: [] })
-		),
+		getCredits(mediaType, tmdbId).catch((): TmdbCredits => ({ cast: [], directors: [] })),
 		getTrailerKey(mediaType, tmdbId).catch((): null => null),
-		getSimilar(mediaType, tmdbId).catch((): TmdbSearchResultItem[] => [])
+		getSimilar(mediaType, tmdbId).catch((): TmdbSearchResultItem[] => []),
+		getGenres(mediaType).catch((): TmdbGenre[] => [])
 	]);
+
+	const genreNameToId = new Map(genreList.map((genre) => [genre.name, genre.id]));
+	const genres = details.genres.map((name) => ({ name, id: genreNameToId.get(name) ?? null }));
 
 	const watchedEpisodes =
 		mediaType === 'tv' && libraryItem ? await getWatchedEpisodes(libraryItem.id) : [];
 
-	return { details, libraryItem, watchedEpisodes, credits, trailerKey, similar };
+	return { details, genres, libraryItem, watchedEpisodes, credits, trailerKey, similar };
 };
