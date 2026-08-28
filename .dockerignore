@@ -1,0 +1,27 @@
+node_modules
+.svelte-kit
+.vercel
+.netlify
+.wrangler
+build
+.output
+.git
+.gitignore
+.github
+
+# Env
+.env
+.env.*
+!.env.example
+
+# SQLite (Turso se usa en producción; esto es solo para dev local)
+*.db
+
+# Dataset pesado opcional, nunca necesario para el build
+/data/movielens-latest
+.tmp-movielens
+
+.vscode
+.claude
+project.txt
+README.md

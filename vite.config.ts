@@ -1,9 +1,15 @@
 import tailwindcss from '@tailwindcss/vite';
-import adapter from '@sveltejs/adapter-vercel';
+import adapter from '@sveltejs/adapter-node';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+	// @libsql/client carga su binario nativo (@libsql/linux-x64-gnu) con un require() dinámico
+	// que no sobrevive al bundling de adapter-node — se deja como paquete externo para que el
+	// servidor construido lo siga resolviendo desde node_modules en runtime.
+	ssr: {
+		external: ['@libsql/client']
+	},
 	plugins: [
 		tailwindcss(),
 		sveltekit({

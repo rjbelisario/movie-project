@@ -40,7 +40,8 @@ Drizzle ORM sobre SQLite (libSQL) y la API de TMDb.
 - Integración OAuth con Trakt.tv (`src/lib/server/trakt.ts`, `traktAccount.ts`, `traktSync.ts`).
 - Motor de recomendaciones propio en `src/lib/server/recommendations/`, con factorización de
   matrices (`matrixFactorization.ts`) entrenada en un `worker_thread` aparte.
-- Despliegue objetivo: **Vercel** (`@sveltejs/adapter-vercel`).
+- Despliegue objetivo: contenedor Docker autogestionado vía [Dokploy](https://dokploy.com)
+  (`@sveltejs/adapter-node`).
 
 ## Motor de recomendaciones
 
@@ -113,11 +114,19 @@ pnpm run dev
    turso db show mi-biblioteca --url
    turso db tokens create mi-biblioteca
    ```
-2. En Vercel, configurar `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `TMDB_API_KEY`,
-   `TRAKT_CLIENT_ID` y `TRAKT_CLIENT_SECRET` como variables de entorno del proyecto.
-3. Registrar `https://<dominio-de-producción>/api/trakt/callback` como redirect URI en la app
+2. En Dokploy, crear una aplicación de tipo Dockerfile apuntando a este repo (usa el
+   [Dockerfile](Dockerfile) del root; no requiere configuración de build adicional).
+3. Configurar `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `TMDB_API_KEY`, `TRAKT_CLIENT_ID` y
+   `TRAKT_CLIENT_SECRET` como variables de entorno de la aplicación en Dokploy (ver
+   [.env.example](.env.example)).
+4. Registrar `https://<dominio-de-producción>/api/trakt/callback` como redirect URI en la app
    de Trakt.
-4. Desplegar (`vercel` CLI o conectando el repo desde el dashboard).
+5. Desplegar. El contenedor expone el puerto `3000`, corre `drizzle-kit migrate` contra Turso
+   automáticamente al arrancar y responde `200 ok` en `/health` (usado por el `HEALTHCHECK` de
+   Docker y se puede reusar como health check path en Dokploy).
+
+También se puede levantar localmente con `docker compose up --build` (usa el mismo
+[docker-compose.yml](docker-compose.yml) y lee las variables desde `.env`).
 
 ## Estructura del proyecto
 

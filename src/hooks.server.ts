@@ -7,7 +7,7 @@ import {
 	deleteSessionCookie
 } from '$lib/server/auth';
 
-const PUBLIC_PATHS = new Set(['/login', '/registro']);
+const PUBLIC_PATHS = new Set(['/login', '/registro', '/health']);
 
 export const handle: Handle = async ({ event, resolve }) => {
 	const token = event.cookies.get(SESSION_COOKIE_NAME);
