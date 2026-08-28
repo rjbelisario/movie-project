@@ -125,8 +125,11 @@ pnpm run dev
    automáticamente al arrancar y responde `200 ok` en `/health` (usado por el `HEALTHCHECK` de
    Docker y se puede reusar como health check path en Dokploy).
 
-También se puede levantar localmente con `docker compose up --build` (usa el mismo
-[docker-compose.yml](docker-compose.yml) y lee las variables desde `.env`).
+El [docker-compose.yml](docker-compose.yml) no publica el puerto al host a propósito (`expose`,
+no `ports`) — en Dokploy el proxy Traefik interno enruta directo al contenedor por su red, y
+publicar el puerto ahí puede chocar con otras apps del mismo servidor. Para levantarlo localmente
+y poder entrar por `localhost:3000`, agregar el mapeo al vuelo:
+`docker compose run --rm --service-ports app` (o correr `docker build -t movie-project . && docker run --env-file .env -p 3000:3000 movie-project` directamente).
 
 ## Estructura del proyecto
 
