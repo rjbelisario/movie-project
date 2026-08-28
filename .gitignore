@@ -28,3 +28,6 @@ vite.config.ts.timestamp-*
 # nunca se commitea. Sin esto, el motor de recomendaciones cae al dataset chico bundleado.
 /data/movielens-latest
 .tmp-movielens
+
+# Claude Code local config
+.claude/
