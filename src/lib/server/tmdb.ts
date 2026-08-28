@@ -326,15 +326,55 @@ export async function getGenres(mediaType: TmdbMediaType): Promise<TmdbGenre[]> 
 	return data.genres;
 }
 
-/** Títulos de un género dado, ordenados por popularidad (`/discover/{mediaType}`). */
-export async function discoverByGenre(
+export type TmdbSortBy =
+	| 'popularity.desc'
+	| 'vote_average.desc'
+	| 'primary_release_date.desc'
+	| 'primary_release_date.asc';
+
+export interface DiscoverFilters {
+	/** Géneros a incluir (combinados con AND, como en TMDb: coma = "y", no "o"). */
+	genreIds?: number[];
+	/** Año mínimo de estreno/primera emisión (inclusive). */
+	yearFrom?: number;
+	/** Año máximo de estreno/primera emisión (inclusive). */
+	yearTo?: number;
+	/** Rating mínimo de TMDb (0-10). Aplica automáticamente un mínimo de votos para evitar
+	 * que un título con 2 votos de 10 aparezca primero. */
+	minRating?: number;
+	sortBy?: TmdbSortBy;
+	/** Código ISO 639-1 del idioma original (ej. 'es', 'en', 'ja'). */
+	originalLanguage?: string;
+}
+
+/** Descubre títulos por filtros combinados (`/discover/{mediaType}`). */
+export async function discoverTitles(
 	mediaType: TmdbMediaType,
-	genreId: number
+	filters: DiscoverFilters = {}
 ): Promise<TmdbSearchResultItem[]> {
-	const data = await tmdbFetch<TmdbRawResultsResponse>(`/discover/${mediaType}`, {
-		with_genres: String(genreId),
-		sort_by: 'popularity.desc'
-	});
+	const dateField = mediaType === 'movie' ? 'primary_release_date' : 'first_air_date';
+	const params: Record<string, string> = {
+		sort_by: filters.sortBy ?? 'popularity.desc'
+	};
+
+	if (filters.genreIds && filters.genreIds.length > 0) {
+		params.with_genres = filters.genreIds.join(',');
+	}
+	if (filters.yearFrom) {
+		params[`${dateField}.gte`] = `${filters.yearFrom}-01-01`;
+	}
+	if (filters.yearTo) {
+		params[`${dateField}.lte`] = `${filters.yearTo}-12-31`;
+	}
+	if (filters.minRating) {
+		params['vote_average.gte'] = String(filters.minRating);
+		params['vote_count.gte'] = '50';
+	}
+	if (filters.originalLanguage) {
+		params.with_original_language = filters.originalLanguage;
+	}
+
+	const data = await tmdbFetch<TmdbRawResultsResponse>(`/discover/${mediaType}`, params);
 	return data.results
 		.map((raw) => mapSearchResult(raw, mediaType))
 		.filter((item): item is TmdbSearchResultItem => item !== null);
