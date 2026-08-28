@@ -7,8 +7,8 @@
 
 	const tiles = $derived([
 		{ label: 'Total en biblioteca', value: data.stats.total },
-		{ label: 'Viendo ahora', value: data.stats.byStatus.watching },
-		{ label: 'Completadas', value: data.stats.byStatus.completed },
+		{ label: 'En watchlist', value: data.stats.byStatus.planned },
+		{ label: 'Vistas', value: data.stats.byStatus.completed },
 		{
 			label: 'Rating promedio',
 			value: data.stats.averageRating ? data.stats.averageRating.toFixed(1) : '—'

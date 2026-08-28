@@ -9,9 +9,7 @@ export const libraryItems = sqliteTable('library_items', {
 	overview: text('overview'),
 	releaseDate: text('release_date'),
 	genres: text('genres', { mode: 'json' }).$type<string[]>().notNull().default([]),
-	status: text('status', { enum: ['planned', 'watching', 'completed', 'dropped'] })
-		.notNull()
-		.default('planned'),
+	status: text('status', { enum: ['planned', 'completed'] }).notNull().default('planned'),
 	rating: integer('rating'),
 	notes: text('notes'),
 	createdAt: text('created_at')

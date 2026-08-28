@@ -44,6 +44,21 @@ export interface TmdbMediaDetails {
 	numberOfEpisodes: number | null;
 	/** Temporadas de la serie (vacío para películas). Excluye la temporada 0 (especiales). */
 	seasons: TmdbSeasonSummary[];
+	/** Creadores de la serie (vacío para películas). El director de película sale de `getCredits`. */
+	creators: string[];
+}
+
+export interface TmdbCastMember {
+	id: number;
+	name: string;
+	character: string;
+	profilePath: string | null;
+}
+
+export interface TmdbCredits {
+	cast: TmdbCastMember[];
+	/** Solo poblado para películas (`/movie/{id}/credits`, crew con job "Director"). */
+	directors: string[];
 }
 
 export interface TmdbSeasonSummary {
@@ -131,6 +146,37 @@ interface TmdbRawTvDetails {
 	number_of_seasons: number | null;
 	number_of_episodes: number | null;
 	seasons: TmdbRawSeasonSummary[];
+	created_by: { id: number; name: string }[];
+}
+
+interface TmdbRawCastMember {
+	id: number;
+	name: string;
+	character: string;
+	profile_path: string | null;
+	order: number;
+}
+
+interface TmdbRawCrewMember {
+	id: number;
+	name: string;
+	job: string;
+}
+
+interface TmdbRawCredits {
+	cast: TmdbRawCastMember[];
+	crew: TmdbRawCrewMember[];
+}
+
+interface TmdbRawVideo {
+	key: string;
+	site: string;
+	type: string;
+	official: boolean;
+}
+
+interface TmdbRawVideosResponse {
+	results: TmdbRawVideo[];
 }
 
 interface TmdbRawEpisode {
@@ -284,7 +330,8 @@ export async function getMovieDetails(id: number): Promise<TmdbMediaDetails> {
 		runtimeMinutes: data.runtime,
 		numberOfSeasons: null,
 		numberOfEpisodes: null,
-		seasons: []
+		seasons: [],
+		creators: []
 	};
 }
 
@@ -315,8 +362,54 @@ export async function getTvDetails(id: number): Promise<TmdbMediaDetails> {
 				episodeCount: season.episode_count,
 				posterPath: season.poster_path,
 				airDate: season.air_date
-			}))
+			})),
+		creators: data.created_by.map((creator) => creator.name)
 	};
+}
+
+/**
+ * Reparto y dirección de una película o serie (`/movie|tv/{id}/credits`).
+ * Para series, `directors` queda vacío: usa `TmdbMediaDetails.creators` en su lugar
+ * (viene de `created_by`, más fiable que el crew agregado de todas las temporadas).
+ */
+export async function getCredits(mediaType: TmdbMediaType, id: number): Promise<TmdbCredits> {
+	const data = await tmdbFetch<TmdbRawCredits>(`/${mediaType}/${id}/credits`);
+
+	const cast = data.cast
+		.sort((a, b) => a.order - b.order)
+		.slice(0, 12)
+		.map((member) => ({
+			id: member.id,
+			name: member.name,
+			character: member.character,
+			profilePath: member.profile_path
+		}));
+
+	const directors =
+		mediaType === 'movie'
+			? data.crew.filter((member) => member.job === 'Director').map((member) => member.name)
+			: [];
+
+	return { cast, directors };
+}
+
+/** Key de YouTube del tráiler oficial más relevante, o `null` si no hay ninguno disponible. */
+export async function getTrailerKey(mediaType: TmdbMediaType, id: number): Promise<string | null> {
+	const data = await tmdbFetch<TmdbRawVideosResponse>(`/${mediaType}/${id}/videos`);
+
+	const trailers = data.results.filter(
+		(video) => video.site === 'YouTube' && video.type === 'Trailer'
+	);
+	const best = trailers.find((video) => video.official) ?? trailers[0];
+	return best?.key ?? null;
+}
+
+/** Títulos similares (`/movie|tv/{id}/similar`). */
+export async function getSimilar(
+	mediaType: TmdbMediaType,
+	id: number
+): Promise<TmdbSearchResultItem[]> {
+	return fetchResultsList(`/${mediaType}/${id}/similar`, mediaType);
 }
 
 /** Detalle completo de una película o serie, según `mediaType` (conveniencia sobre las dos funciones anteriores). */

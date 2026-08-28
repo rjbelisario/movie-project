@@ -4,10 +4,8 @@
 	let { data }: PageProps = $props();
 
 	const statusLabels: Record<string, string> = {
-		planned: 'Pendiente',
-		watching: 'Viendo',
-		completed: 'Completada',
-		dropped: 'Abandonada'
+		planned: 'Watchlist',
+		completed: 'Vistas'
 	};
 
 	const statusRows = $derived(

@@ -157,9 +157,7 @@ export async function getLibraryStats(): Promise<LibraryStats> {
 
 	const byStatus: Record<LibraryItem['status'], number> = {
 		planned: 0,
-		watching: 0,
-		completed: 0,
-		dropped: 0
+		completed: 0
 	};
 	const byMediaType: Record<LibraryItem['mediaType'], number> = {
 		movie: 0,

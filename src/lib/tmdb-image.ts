@@ -1,7 +1,15 @@
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
 
 /** Tamaños de imagen soportados por el servicio de imágenes de TMDb para pósters. */
-export type TmdbPosterSize = 'w92' | 'w154' | 'w185' | 'w342' | 'w500' | 'w780' | 'original';
+export type TmdbPosterSize =
+	| 'w92'
+	| 'w154'
+	| 'w185'
+	| 'w342'
+	| 'w500'
+	| 'w780'
+	| 'w1280'
+	| 'original';
 
 /**
  * Construye la URL completa de un póster de TMDb. Vive fuera de `$lib/server` porque también

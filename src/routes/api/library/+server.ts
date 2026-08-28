@@ -3,7 +3,7 @@ import type { RequestHandler } from './$types';
 import { listLibraryItems, addToLibrary } from '$lib/server/library';
 import type { LibraryItem, NewLibraryItem } from '$lib/server/db/schema';
 
-const VALID_STATUS: LibraryItem['status'][] = ['planned', 'watching', 'completed', 'dropped'];
+const VALID_STATUS: LibraryItem['status'][] = ['planned', 'completed'];
 const VALID_MEDIA_TYPE: LibraryItem['mediaType'][] = ['movie', 'tv'];
 
 export const GET: RequestHandler = async ({ url }) => {

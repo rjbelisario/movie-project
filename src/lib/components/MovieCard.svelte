@@ -19,16 +19,12 @@
 
 	const statusLabels: Record<NonNullable<CardItem['status']>, string> = {
 		planned: 'Pendiente',
-		watching: 'Viendo',
-		completed: 'Completada',
-		dropped: 'Abandonada'
+		completed: 'Completada'
 	};
 
 	const statusColors: Record<NonNullable<CardItem['status']>, string> = {
 		planned: 'bg-shade-700 text-shade-10',
-		watching: 'bg-blue-500 text-shade-10',
-		completed: 'bg-green-500 text-shade-950',
-		dropped: 'bg-red-500 text-shade-10'
+		completed: 'bg-green-500 text-shade-950'
 	};
 </script>
 
