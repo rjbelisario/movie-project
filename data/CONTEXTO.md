@@ -17,7 +17,8 @@ producción. Los datos reales llegan en tiempo de ejecución desde TMDb vía
 Este archivo se referenció directamente en los prompts que generaron:
 
 - El componente `MovieCard.svelte` y el grid de tarjetas (`/renderizar_tarjetas`, ver
-  `.claude/commands/renderizar_tarjetas.md` y la skill `.claude/skills/tmdb-card-builder/`),
+  `.github/prompts/renderizar_tarjetas.prompt.md` y las instrucciones de
+  `.github/instructions/tmdb-card-builder.instructions.md` en Copilot Chat),
   para que el agente conociera de antemano qué campos mostrar (poster, título, género, estado,
   rating, notas) sin necesidad de adivinar la forma de los datos.
 - La página de estadísticas (`/estadisticas`), para diseñar las agregaciones (conteo por

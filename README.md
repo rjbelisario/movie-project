@@ -145,17 +145,18 @@ src/lib/server/
   matrixFactorization.ts   Factorización de matrices (FunkSVD) para el filtrado colaborativo
 src/routes/                Páginas y endpoints (SvelteKit file-based routing)
 data/contexto-biblioteca.json   Contexto de datos de referencia (ver data/CONTEXTO.md)
-.claude/skills/tmdb-card-builder, .claude/commands/renderizar_tarjetas.md
-                            Skill + comando personalizado para generar la UI de tarjetas
-.claude/agents/agente-datos-tmdb.md   Agente especializado en la capa de datos TMDb/biblioteca
+.github/instructions/tmdb-card-builder.instructions.md, .github/prompts/renderizar_tarjetas.prompt.md
+                            Instructions file + prompt file (Copilot Chat) para generar la UI de tarjetas
+.github/chatmodes/agente-datos-tmdb.chatmode.md   Chat mode / agente especializado en la capa de datos TMDb/biblioteca
 ```
 
 ## Cumplimiento de la rúbrica del curso
 
 1. **Cero código manual** — todo el código se generó vía prompting/agentes.
 2. **Contexto de datos** — `data/contexto-biblioteca.json` + `data/CONTEXTO.md`.
-3. **Skill + comando personalizado** — skill `tmdb-card-builder`, comando `/renderizar_tarjetas`.
-4. **Agente especializado** — `agente-datos-tmdb`, responsable de la capa TMDb/biblioteca.
+3. **Skill + comando personalizado** — instructions file `tmdb-card-builder` y prompt file
+   `/renderizar_tarjetas` (Copilot Chat).
+4. **Agente especializado** — chat mode `agente-datos-tmdb`, responsable de la capa TMDb/biblioteca.
 5. **Depuración autónoma** — errores de SSR, tipos y reactividad diagnosticados y corregidos
    iterando con las herramientas de Claude Code durante el desarrollo (ver historial de commits).
 6. **Despliegue** — ver [Despliegue](#despliegue).
